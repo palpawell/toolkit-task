@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\API\AuthController;
 use App\Http\Controllers\API\StatementController;
-use App\Http\Controllers\API\WebhookController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +30,6 @@ Route::prefix('v1')->group(function () {
     Route::controller(StatementController::class)->group(function () {
         Route::get('statement', 'index');
         Route::post('statement/create', 'create');
-//        Route::delete('ticket', 'delete');
+        Route::delete('statement', 'delete');
     });
 });

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
-use App\Http\Resources\StatementCollection;
 use App\Models\Statement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,20 +16,27 @@ class StatementController extends Controller
     }
 
     /**
-     * @return StatementCollection|JsonResponse
+     * Get list of statements for specific user role
+     *
+     * @param Request $request
+     * @return JsonResponse
      */
     public function index(Request $request)
     {
-        $models = Statement::query()->where([
-            'user' => $request->user()->id,
-        ]);
+        $user = $request->user();
 
-        return response()->json(['models' => $models]);
+        $models = Statement::query();
+
+        if (!$user->hasRole(UserRole::ADMIN)) {
+            $models = $models->where([
+                'user_id' => $request->user()->id,
+            ]);
+        }
+
+        return response()->json(['models' => $models->paginate(25)]);
     }
 
     /**
-     * Create statement
-     *
      * @return JsonResponse
      */
     public function create(Request $request)
@@ -61,6 +68,51 @@ class StatementController extends Controller
 
         return response()->json([
             'statement' => $statement,
+        ]);
+    }
+
+    /**
+     * @return JsonResponse
+     */
+    public function delete(Request $request)
+    {
+        $validator = \Validator::make($request->all(), [
+            'id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'msg' => $validator->errors(),
+                ],
+            ]);
+        }
+
+        try {
+            $model = Statement::findOrFail($request->query('id'));
+
+            if ($model->user_id !== $request->user()->id) {
+                return response()->json([
+                    'error' => 'You don\'t have permission to delete this statement',
+                ]);
+            }
+
+            $model->delete();
+        } catch (\Throwable $t) {
+            return response()->json([
+                'success' => false,
+                'data' => [
+                    'msg' => $t->getMessage(),
+                ],
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'msg' => 'Receipt deleted successfully',
+            ],
         ]);
     }
 }

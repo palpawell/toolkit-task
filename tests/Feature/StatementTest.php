@@ -4,7 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Statement;
 use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Response;
+use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -12,32 +15,68 @@ class StatementTest extends TestCase
 {
     use RefreshDatabase;
 
+    private Authenticatable $user;
+
     public function setUp(): void
     {
         parent::setUp();
 
-        Sanctum::actingAs(
+        $this->user = Sanctum::actingAs(
             User::factory()->create(),
             ['*']
         );
-
-        Statement::factory(10)->create();
-
-        $this->assertDatabaseCount('statements', 10);
     }
 
     public function test_client_can_create_ticket()
     {
+        Statement::factory(10)->create(['user_id' => $this->user->id]);
+        $this->assertDatabaseCount('statements', 10);
+
         $response = $this
             ->postJson('/api/v1/statement/create', [
                 'title' => 'Test title 11',
             ]
         );
 
-        $response->assertStatus(200);
+        $response->assertOk();
 
         $this->assertDatabaseHas('statements', [
             'title' => 'Test title 11',
+        ]);
+    }
+
+    public function test_client_can_list_statements()
+    {
+        Statement::factory(10)->create(['user_id' => $this->user->id]);
+        $this->assertDatabaseCount('statements', 10);
+
+        $response = $this
+            ->getJson('/api/v1/statement');
+
+        $response
+            ->assertOk()
+            ->assertJson(fn (AssertableJson $json) =>
+                $json->has('models.data')
+            );
+
+        $responseData = $response->json();
+        $this->assertTrue(count($responseData['models']['data']) > 0);
+    }
+
+    public function test_client_can_delete_statement()
+    {
+        $models = Statement::factory(10)->create(['user_id' => $this->user->id]);
+        $this->assertDatabaseCount('statements', 10);
+
+        $deleteID = $models[0]->id;
+
+        $response = $this
+            ->delete("/api/v1/statement?id=$deleteID");
+
+        $response->assertOk();
+
+        $this->assertDatabaseMissing('statements', [
+            'id' => $deleteID,
         ]);
     }
 }
