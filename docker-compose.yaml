@@ -1,0 +1,65 @@
+version: '3.9'
+
+services:
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    volumes:
+      - .:/var/www/html
+      - ./docker/php/php-overrides.ini:/usr/local/etc/php/conf.d/php-overrides.ini
+    environment:
+      XDEBUG_CONFIG: remote_host=host.docker.internal
+      PHP_IDE_CONFIG: "serverName=Docker"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - toolkit
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx:/etc/nginx/conf.d
+      - .:/var/www/html
+    depends_on:
+      - php
+      - postgres
+    networks:
+      - toolkit
+
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: toolkit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_toolkit_data:/var/lib/postgresql/data
+      - ./docker/postgres/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql
+    networks:
+      - toolkit
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "${DB_DATABASE}", "-U", "${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  postgres_toolkit_data:
+
+networks:
+  toolkit:
