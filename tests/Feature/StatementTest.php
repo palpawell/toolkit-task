@@ -7,6 +7,8 @@ use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Response;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Testing\Fluent\AssertableJson;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -27,7 +29,7 @@ class StatementTest extends TestCase
         );
     }
 
-    public function test_client_can_create_ticket()
+    public function test_client_can_create_statement()
     {
         Statement::factory(10)->create(['user_id' => $this->user->id]);
         $this->assertDatabaseCount('statements', 10);
@@ -43,6 +45,33 @@ class StatementTest extends TestCase
         $this->assertDatabaseHas('statements', [
             'title' => 'Test title 11',
         ]);
+    }
+
+    public function test_client_can_create_statement_with_file()
+    {
+        Statement::factory(10)->create(['user_id' => $this->user->id]);
+        $this->assertDatabaseCount('statements', 10);
+
+        Storage::fake('public');
+
+        $fileName = 'document.pdf';
+        $file = UploadedFile::fake()->create('document.pdf', 100);
+
+        $response = $this
+            ->post('/api/v1/statement/create', [
+                    'title' => 'Statement with file',
+                    'file' => $file,
+                ]
+            );
+
+        $response->assertOk();
+
+        $this->assertDatabaseHas('statements', [
+            'title' => 'Statement with file',
+            'file' => $fileName,
+        ]);
+
+        Storage::disk('public')->assertExists("uploads/$fileName");
     }
 
     public function test_client_can_list_statements()

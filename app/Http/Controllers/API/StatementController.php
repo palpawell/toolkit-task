@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Statement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Ramsey\Uuid\Rfc4122\UuidV4;
+use Ramsey\Uuid\Uuid;
 
 class StatementController extends Controller
 {
@@ -57,6 +59,16 @@ class StatementController extends Controller
             $statement = new Statement();
             $statement->title = $request->title;
             $statement->user_id = $request->user()->id;
+
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileName = $file->getClientOriginalName();
+
+                $file->storeAs('public/uploads', $fileName);
+
+                $statement->file = $fileName;
+            }
+
             $statement->save();
         } catch (\Throwable $t) {
             return response()->json([
