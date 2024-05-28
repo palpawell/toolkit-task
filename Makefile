@@ -18,3 +18,8 @@ docker-restart: docker-stop docker-up
 run-tests:
 	docker-compose up -d \
 	&& docker-compose exec php bash -c "php artisan test"
+
+.PHONY: run-api-docs
+run-api-docs:
+	docker-compose up -d \
+	&& docker-compose exec php bash -c "php artisan l5-swagger:generate"

@@ -1,7 +1,9 @@
 <?php
 
-use App\Http\Controllers\API\AuthController;
-use App\Http\Controllers\API\StatementController;
+use App\Http\Controllers\API\Auth\LoginAction;
+use App\Http\Controllers\API\Auth\LogoutAction;
+use App\Http\Controllers\API\Auth\RefreshAction;
+use App\Http\Controllers\API\Auth\RegisterAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -21,15 +23,12 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::prefix('v1')->group(function () {
-    Route::controller(AuthController::class)->group(function () {
-        Route::post('login', 'login');
-        Route::post('register', 'register');
-        Route::post('logout', 'logout');
-    });
+    Route::post('login', LoginAction::class);
+    Route::post('register', RegisterAction::class);
+    Route::post('logout', LogoutAction::class)->middleware('auth:sanctum');
+    Route::post('refresh', RefreshAction::class)->middleware('auth:sanctum');
 
-    Route::controller(StatementController::class)->group(function () {
-        Route::get('statement', 'index');
-        Route::post('statement/create', 'create');
-        Route::delete('statement', 'delete');
-    });
+    Route::get('statement', \App\Http\Controllers\Api\Statement\CreateAction::class)->middleware('auth:sanctum');
+    Route::post('statement/create', \App\Http\Controllers\Api\Statement\CreateAction::class)->middleware('auth:sanctum');
+    Route::delete('statement', \App\Http\Controllers\Api\Statement\DeleteAction::class)->middleware('auth:sanctum');
 });
