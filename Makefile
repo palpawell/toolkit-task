@@ -23,3 +23,8 @@ run-tests:
 run-api-docs:
 	docker-compose up -d \
 	&& docker-compose exec php bash -c "php artisan l5-swagger:generate"
+
+.PHONY: run-phpcs
+run-phpcs:
+	docker-compose up -d \
+    	&& docker-compose exec php bash -c "php vendor/bin/phpcs -v app"
