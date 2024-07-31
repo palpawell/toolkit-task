@@ -49,13 +49,13 @@ class StatementTest extends TestCase
 
     public function test_client_can_create_statement_with_file()
     {
-        Statement::factory(10)->create(['user_id' => $this->user->id]);
-        $this->assertDatabaseCount('statements', 10);
-
         Storage::fake('public');
 
         $fileName = 'document.pdf';
-        $file = UploadedFile::fake()->create('document.pdf', 100);
+        $file = UploadedFile::fake()->create($fileName, 100);
+
+        Statement::factory(10)->create(['user_id' => $this->user->id]);
+        $this->assertDatabaseCount('statements', 10);
 
         $response = $this
             ->post('/api/v1/statement/create', [
@@ -71,6 +71,7 @@ class StatementTest extends TestCase
             'file' => $fileName,
         ]);
 
+        // Assert the file was stored
         Storage::disk('public')->assertExists("uploads/$fileName");
     }
 
@@ -80,7 +81,7 @@ class StatementTest extends TestCase
         $this->assertDatabaseCount('statements', 10);
 
         $response = $this
-            ->getJson('/api/v1/statement');
+            ->getJson('/api/v1/statement/index');
 
         $response
             ->assertOk()
@@ -100,7 +101,7 @@ class StatementTest extends TestCase
         $deleteID = $models[0]->id;
 
         $response = $this
-            ->delete("/api/v1/statement?id=$deleteID");
+            ->delete("/api/v1/statement/delete?id=$deleteID");
 
         $response->assertOk();
 

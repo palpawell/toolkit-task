@@ -14,7 +14,7 @@ class StatementFactory extends Factory
     {
         return [
             'user_id'    => 1,
-            'title'      => $this->faker->title(),
+            'title'      => $this->faker->text(20),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];

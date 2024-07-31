@@ -65,7 +65,7 @@ class CreateAction extends Controller
                 $file = $request->file('file');
                 $fileName = $file->getClientOriginalName();
 
-                $file->storeAs('public/uploads', $fileName);
+                $file->storeAs('uploads', $fileName, 'public');
 
                 $statement->file = $fileName;
             }
